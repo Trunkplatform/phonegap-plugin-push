@@ -113,9 +113,9 @@ public class GCMIntentService extends GCMBaseIntentService implements PushConsta
             } else {
                 JSONObject payload = extras.getString("payload");
                 JSONObject data = payload.getJSONObject("data");
-                String message = data.getString("alert") //parse puts the message as an alert if you don't use custom json payload
-                extras.putString("message", alert)
-                createNotification(context, extras)
+                String message = data.getString("alert"); //parse puts the message as an alert if you don't use custom json payload
+                extras.putString("message", alert);
+                createNotification(context, extras);
             }
         }
     }
