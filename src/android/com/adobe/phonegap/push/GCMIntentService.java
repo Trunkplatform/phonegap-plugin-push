@@ -88,20 +88,34 @@ public class GCMIntentService extends GCMBaseIntentService implements PushConsta
         Bundle extras = intent.getExtras();
         if (extras != null) {
             // if we are in the foreground, just surface the payload, else post it to the statusbar
+//            if (PushPlugin.isInForeground()) {
+//                extras.putBoolean(FOREGROUND, true);
+//                PushPlugin.sendExtras(extras);
+//            }
+//            else {
+//                extras.putBoolean(FOREGROUND, false);
+//
+//                // Send a notification if there is a message
+//                String message = this.getMessageText(extras);
+//                String title = getString(extras, TITLE, "");
+//                if ((message != null && message.length() != 0) ||
+//                        (title != null && title.length() != 0)) {
+//                    createNotification(context, extras);
+//                }
+//            }
+            // parse notification
             if (PushPlugin.isInForeground()) {
                 extras.putBoolean(FOREGROUND, true);
                 PushPlugin.sendExtras(extras);
-            }
-            else {
+            } else if (extras.getString("message") && extras.getString("message").length() != 0) {
                 extras.putBoolean(FOREGROUND, false);
-
-                // Send a notification if there is a message
-                String message = this.getMessageText(extras);
-                String title = getString(extras, TITLE, "");
-                if ((message != null && message.length() != 0) ||
-                        (title != null && title.length() != 0)) {
-                    createNotification(context, extras);
-                }
+                createNotification(context, extras);
+            } else {
+                JSONObject payload = extras.getString("payload");
+                JSONObject data = payload.getJSONObject("data");
+                String message = data.getString("alert") //parse puts the message as an alert if you don't use custom json payload
+                extras.putString("message", alert)
+                createNotification(context, extras)
             }
         }
     }
