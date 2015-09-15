@@ -17,9 +17,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static com.adobe.phonegap.push.PushConstants.*;
+
 import java.util.Iterator;
 
-public class PushPlugin extends CordovaPlugin implements PushConstants {
+public class PushPlugin extends CordovaPlugin {
 
     public static final String LOG_TAG = "PushPlugin";
 
