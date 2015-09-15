@@ -114,8 +114,7 @@ public class GCMIntentService extends GCMBaseIntentService{
             } else {
                 try
                 {
-                    JSONObject payload = new JSONObject( extras.getString( "payload" ) );
-                    JSONObject data = payload.getJSONObject( "data" );
+                    JSONObject data = new JSONObject( extras.getString( "data" ) );
                     String message = data.getString( "alert" ); //parse puts the message as an alert if you don't use custom json payload
                     extras.putString( "message", message );
                     createNotification(context, extras);
