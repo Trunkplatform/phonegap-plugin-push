@@ -108,14 +108,20 @@ public class GCMIntentService extends GCMBaseIntentService{
             if (PushPlugin.isInForeground()) {
                 extras.putBoolean(FOREGROUND, true);
                 PushPlugin.sendExtras(extras);
-            } else if (extras.getString("message") && extras.getString("message").length() != 0) {
+            } else if (extras.containsKey( "message" ) && extras.getString("message").length() != 0) {
                 extras.putBoolean(FOREGROUND, false);
                 createNotification(context, extras);
             } else {
-                JSONObject payload = extras.getString("payload");
-                JSONObject data = payload.getJSONObject("data");
-                String message = data.getString("alert"); //parse puts the message as an alert if you don't use custom json payload
-                extras.putString("message", alert);
+                try
+                {
+                    JSONObject payload = new JSONObject( extras.getString( "payload" ) );
+                    JSONObject data = payload.getJSONObject( "data" );
+                    String message = data.getString( "alert" ); //parse puts the message as an alert if you don't use custom json payload
+                } catch (JSONException e)
+                {
+                    e.printStackTrace();
+                }
+                extras.putString( "message", message );
                 createNotification(context, extras);
             }
         }
@@ -144,7 +150,7 @@ public class GCMIntentService extends GCMBaseIntentService{
                         .setContentIntent(contentIntent)
                         .setAutoCancel(true);
 
-        SharedPreferences prefs = context.getSharedPreferences(PushPlugin.COM_ADOBE_PHONEGAP_PUSH, Context.MODE_PRIVATE);
+        SharedPreferences prefs = context.getSharedPreferences(COM_ADOBE_PHONEGAP_PUSH, Context.MODE_PRIVATE);
         String localIcon = prefs.getString(ICON, null);
         String localIconColor = prefs.getString(ICON_COLOR, null);
         boolean soundOption = prefs.getBoolean(SOUND, true);
