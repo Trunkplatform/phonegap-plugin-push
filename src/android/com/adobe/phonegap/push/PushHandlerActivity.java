@@ -8,7 +8,9 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 
-public class PushHandlerActivity extends Activity implements PushConstants {
+import static com.adobe.phonegap.push.PushConstants.*;
+
+public class PushHandlerActivity extends Activity{
     private static String LOG_TAG = "PushPlugin_PushHandlerActivity";
 
     /*

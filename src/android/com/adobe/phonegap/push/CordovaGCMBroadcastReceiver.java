@@ -4,12 +4,14 @@ import android.content.Context;
 
 import com.google.android.gcm.GCMBroadcastReceiver;
 import static com.google.android.gcm.GCMConstants.DEFAULT_INTENT_SERVICE_CLASS_NAME;
+import static com.adobe.phonegap.push.PushConstants.*;
+
 
 /*
  * Implementation of GCMBroadcastReceiver that hard-wires the intent service to be 
  * com.plugin.gcm.GCMIntentService, instead of your_package.GCMIntentService 
  */
-public class CordovaGCMBroadcastReceiver extends GCMBroadcastReceiver implements PushConstants {
+public class CordovaGCMBroadcastReceiver extends GCMBroadcastReceiver{
 	
 	@Override
 	protected String getGCMIntentServiceClassName(Context context) {

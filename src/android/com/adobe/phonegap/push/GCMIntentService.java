@@ -32,9 +32,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import static com.adobe.phonegap.push.PushConstants.*;
 
 @SuppressLint("NewApi")
-public class GCMIntentService extends GCMBaseIntentService implements PushConstants {
+public class GCMIntentService extends GCMBaseIntentService{
 
     private static final String LOG_TAG = "PushPlugin_GCMIntentService";
     private static HashMap<Integer, ArrayList<String>> messageMap = new HashMap<Integer, ArrayList<String>>();
