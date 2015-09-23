@@ -88,23 +88,6 @@ public class GCMIntentService extends GCMBaseIntentService{
         // Extract the payload from the message
         Bundle extras = intent.getExtras();
         if (extras != null) {
-            // if we are in the foreground, just surface the payload, else post it to the statusbar
-//            if (PushPlugin.isInForeground()) {
-//                extras.putBoolean(FOREGROUND, true);
-//                PushPlugin.sendExtras(extras);
-//            }
-//            else {
-//                extras.putBoolean(FOREGROUND, false);
-//
-//                // Send a notification if there is a message
-//                String message = this.getMessageText(extras);
-//                String title = getString(extras, TITLE, "");
-//                if ((message != null && message.length() != 0) ||
-//                        (title != null && title.length() != 0)) {
-//                    createNotification(context, extras);
-//                }
-//            }
-            // parse notification
             if (PushPlugin.isInForeground()) {
                 extras.putBoolean(FOREGROUND, true);
                 PushPlugin.sendExtras(extras);
@@ -112,16 +95,9 @@ public class GCMIntentService extends GCMBaseIntentService{
                 extras.putBoolean(FOREGROUND, false);
                 createNotification(context, extras);
             } else {
-                try
-                {
-                    JSONObject data = new JSONObject( extras.getString( "data" ) );
-                    String message = data.getString( "alert" ); //parse puts the message as an alert if you don't use custom json payload
-                    extras.putString( "message", message );
-                    createNotification(context, extras);
-                } catch (JSONException e)
-                {
-                    e.printStackTrace();
-                }
+                //TODO handle event
+                String payload = extras.getString("payload");
+                Log.d(LOG_TAG, "payload: " + payload);
             }
         }
     }
@@ -292,7 +268,7 @@ public class GCMIntentService extends GCMBaseIntentService{
     private void setNotificationMessage(int notId, Bundle extras, NotificationCompat.Builder mBuilder) {
         String message = getMessageText(extras);
 
-        String style = getString(extras, STYLE, STYLE_TEXT);
+        String style = "inbox";
         if(STYLE_INBOX.equals(style)) {
             setNotification(notId, message);
 
@@ -302,7 +278,7 @@ public class GCMIntentService extends GCMBaseIntentService{
             Integer sizeList = messageList.size();
             if (sizeList > 1) {
                 String sizeListMessage = sizeList.toString();
-                String stacking = sizeList + " more";
+                String stacking = sizeList + " new messages";
                 if (getString(extras, SUMMARY_TEXT) != null) {
                     stacking = getString(extras, SUMMARY_TEXT);
                     stacking = stacking.replace("%n%", sizeListMessage);
