@@ -22,7 +22,7 @@ public class PushHandlerActivity extends Activity{
     @Override
     public void onCreate(Bundle savedInstanceState) {
         GCMIntentService gcm = new GCMIntentService();
-        gcm.setNotification(getIntent().getIntExtra(NOT_ID, 0), "");
+        gcm.setNotification("", null);
         super.onCreate(savedInstanceState);
         Log.v(LOG_TAG, "onCreate");
 

@@ -60,11 +60,13 @@
         <framework src="com.android.support:support-v13:22+" />
 
 		<source-file src="src/android/libs/gcm.jar" target-dir="libs/" />
+		<source-file src="src/android/libs/guava-18.0.jar" target-dir="libs/" />
 		<source-file src="src/android/com/adobe/phonegap/push/CordovaGCMBroadcastReceiver.java" target-dir="src/com/adobe/phonegap/push/" />
 		<source-file src="src/android/com/adobe/phonegap/push/GCMIntentService.java" target-dir="src/com/adobe/phonegap/push/" />
 		<source-file src="src/android/com/adobe/phonegap/push/PushHandlerActivity.java" target-dir="src/com/adobe/phonegap/push/" />
 		<source-file src="src/android/com/adobe/phonegap/push/PushPlugin.java" target-dir="src/com/adobe/phonegap/push/" />
 		<source-file src="src/android/com/adobe/phonegap/push/PushConstants.java" target-dir="src/com/adobe/phonegap/push/" />
+		<source-file src="src/android/com/adobe/phonegap/push/NotificationObject.java" target-dir="src/com/adobe/phonegap/push/" />
 
 	</platform>
 

@@ -19,6 +19,8 @@ import android.support.v4.app.NotificationCompat;
 import android.text.Html;
 import android.util.Log;
 
+import com.adobe.phonegap.push.NotificationObject;
+
 import com.google.android.gcm.GCMBaseIntentService;
 
 import org.json.JSONArray;
@@ -31,26 +33,25 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+
+import com.google.common.collect.LinkedListMultimap;
+
 import java.util.Random;
+
 import static com.adobe.phonegap.push.PushConstants.*;
 
 @SuppressLint("NewApi")
-public class GCMIntentService extends GCMBaseIntentService{
+public class GCMIntentService extends GCMBaseIntentService {
 
     private static final String LOG_TAG = "PushPlugin_GCMIntentService";
-    private static HashMap<Integer, ArrayList<String>> messageMap = new HashMap<Integer, ArrayList<String>>();
+    private static LinkedListMultimap<String, NotificationObject> messageList = LinkedListMultimap.create();
+    int notificationId = 0;
 
-    public void setNotification(int notId, String message){
-        ArrayList<String> messageList = messageMap.get(notId);
-        if(messageList == null) {
-            messageList = new ArrayList<String>();
-            messageMap.put(notId, messageList);
-        }
-
-        if(message.isEmpty()){
-            messageList.clear();
-        }else{
-            messageList.add(message);
+    public void setNotification(String id, NotificationObject message) {
+        if (id != null && !id.isEmpty() && message != null) {
+            messageList.put(id, message);
         }
     }
 
@@ -68,9 +69,8 @@ public class GCMIntentService extends GCMBaseIntentService{
 
             Log.v(LOG_TAG, "onRegistered: " + json.toString());
 
-            PushPlugin.sendEvent( json );
-        }
-        catch(JSONException e) {
+            PushPlugin.sendEvent(json);
+        } catch (JSONException e) {
             // No message to the user is sent, JSON failed
             Log.e(LOG_TAG, "onRegistered: JSON exception");
         }
@@ -91,14 +91,25 @@ public class GCMIntentService extends GCMBaseIntentService{
             if (PushPlugin.isInForeground()) {
                 extras.putBoolean(FOREGROUND, true);
                 PushPlugin.sendExtras(extras);
-            } else if (extras.containsKey( "message" ) && extras.getString("message").length() != 0) {
+            } else if (extras.containsKey("message") && extras.getString("message").length() != 0) {
                 extras.putBoolean(FOREGROUND, false);
                 createNotification(context, extras);
             } else {
-                //TODO handle event
-                String payload = extras.getString("payload");
-                Log.d(LOG_TAG, "payload: " + payload);
+                clearNotificationRelatedToStream(extras);
+                if (messageList.isEmpty()) {
+                    NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    mNotificationManager.cancelAll();
+                } else {
+                    createNotification(context, extras);
+                }
             }
+        }
+    }
+
+    private void clearNotificationRelatedToStream(Bundle extras) {
+        String streamId = extras.getString("payload", "");
+        if (!streamId.isEmpty()) {
+            messageList.removeAll(streamId);
         }
     }
 
@@ -108,11 +119,10 @@ public class GCMIntentService extends GCMBaseIntentService{
         String packageName = context.getPackageName();
         Resources resources = context.getResources();
 
-        int notId = parseInt(NOT_ID, extras);
         Intent notificationIntent = new Intent(this, PushHandlerActivity.class);
         notificationIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         notificationIntent.putExtra(PUSH_BUNDLE, extras);
-        notificationIntent.putExtra(NOT_ID, notId);
+        notificationIntent.putExtra(NOT_ID, notificationId);
 
         int requestCode = new Random().nextInt();
         PendingIntent contentIntent = PendingIntent.getActivity(this, requestCode, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -148,7 +158,7 @@ public class GCMIntentService extends GCMBaseIntentService{
          * To use, add the `iconColor` key to plugin android options
          *
          */
-        setNotificationIconColor(getString(extras,"color"), mBuilder, localIconColor);
+        setNotificationIconColor(getString(extras, "color"), mBuilder, localIconColor);
 
         /*
          * Notification Icon
@@ -198,7 +208,7 @@ public class GCMIntentService extends GCMBaseIntentService{
         /*
          * Notification message
          */
-        setNotificationMessage(notId, extras, mBuilder);
+        setNotificationMessage(extras, mBuilder);
 
         /*
          * Notification count
@@ -210,7 +220,7 @@ public class GCMIntentService extends GCMBaseIntentService{
          */
         createActions(extras, mBuilder, resources, packageName);
 
-        mNotificationManager.notify(appName, notId, mBuilder.build());
+        mNotificationManager.notify(appName, notificationId, mBuilder.build());
     }
 
     private void createActions(Bundle extras, NotificationCompat.Builder mBuilder, Resources resources, String packageName) {
@@ -219,7 +229,7 @@ public class GCMIntentService extends GCMBaseIntentService{
         if (actions != null) {
             try {
                 JSONArray actionsArray = new JSONArray(actions);
-                for (int i=0; i < actionsArray.length(); i++) {
+                for (int i = 0; i < actionsArray.length(); i++) {
                     Log.d(LOG_TAG, "adding action");
                     JSONObject action = actionsArray.getJSONObject(i);
                     Log.d(LOG_TAG, "adding callback = " + action.getString(CALLBACK));
@@ -231,7 +241,7 @@ public class GCMIntentService extends GCMBaseIntentService{
                     mBuilder.addAction(resources.getIdentifier(action.getString(ICON), DRAWABLE, packageName),
                             action.getString(TITLE), pIntent);
                 }
-            } catch(JSONException e) {
+            } catch (JSONException e) {
                 // nope
             }
         }
@@ -265,17 +275,30 @@ public class GCMIntentService extends GCMBaseIntentService{
         }
     }
 
-    private void setNotificationMessage(int notId, Bundle extras, NotificationCompat.Builder mBuilder) {
-        String message = getMessageText(extras);
+    private NotificationObject newNotificationObject(String title, String message) {
+        if (title == null || message == null || title.isEmpty() || message.isEmpty()) return null;
+        return new NotificationObject(title, message);
+    }
+
+    private void setNotificationMessage(Bundle extras, NotificationCompat.Builder mBuilder) {
+        String messageText = getMessageText(extras);
+        String title = getString(extras, TITLE);
+        NotificationObject message = newNotificationObject(title, messageText);
 
         String style = "inbox";
-        if(STYLE_INBOX.equals(style)) {
-            setNotification(notId, message);
 
-            mBuilder.setContentText(message);
+        if (STYLE_INBOX.equals(style)) {
+            String streamId = extras.getString("payload", "");
+            setNotification(streamId, message);
 
-            ArrayList<String> messageList = messageMap.get(notId);
             Integer sizeList = messageList.size();
+            if (message != null) {
+                mBuilder.setContentText(message.getMessage());
+            } else if (sizeList == 1) {
+                message = messageList.values().get(0);
+                mBuilder.setContentText(message.getMessage()).setContentTitle(message.getTitle());
+            }
+
             if (sizeList > 1) {
                 String sizeListMessage = sizeList.toString();
                 String stacking = sizeList + " new messages";
@@ -284,37 +307,38 @@ public class GCMIntentService extends GCMBaseIntentService{
                     stacking = stacking.replace("%n%", sizeListMessage);
                 }
                 NotificationCompat.InboxStyle notificationInbox = new NotificationCompat.InboxStyle()
-                        .setBigContentTitle(getString(extras, TITLE))
+                        .setBigContentTitle(sizeList + " new messages")
                         .setSummaryText(stacking);
 
-                for (int i = messageList.size() - 1; i >= 0; i--) {
-                    notificationInbox.addLine(Html.fromHtml(messageList.get(i)));
+                for (int i = sizeList - 1; i >= 0; i--) {
+                    message = messageList.values().get(i);
+                    notificationInbox.addLine(Html.fromHtml("<b>" + message.getTitle() + "</b> - " + message.getMessage()));
                 }
 
                 mBuilder.setStyle(notificationInbox);
             }
         } else if (STYLE_PICTURE.equals(style)) {
-            setNotification(notId, "");
+            setNotification("", null);
 
             NotificationCompat.BigPictureStyle bigPicture = new NotificationCompat.BigPictureStyle();
             bigPicture.bigPicture(getBitmapFromURL(getString(extras, PICTURE)));
-            bigPicture.setBigContentTitle(getString(extras, TITLE));
+            bigPicture.setBigContentTitle(title);
             bigPicture.setSummaryText(getString(extras, SUMMARY_TEXT));
 
-            mBuilder.setContentTitle(getString(extras, TITLE));
-            mBuilder.setContentText(message);
+            mBuilder.setContentTitle(title);
+            mBuilder.setContentText(messageText);
 
             mBuilder.setStyle(bigPicture);
         } else {
-            setNotification(notId, "");
+            setNotification("", null);
 
             NotificationCompat.BigTextStyle bigText = new NotificationCompat.BigTextStyle();
 
-            if (message != null) {
-                mBuilder.setContentText(Html.fromHtml(message));
+            if (messageText != null) {
+                mBuilder.setContentText(Html.fromHtml(messageText));
 
-                bigText.bigText(message);
-                bigText.setBigContentTitle(getString(extras, TITLE));
+                bigText.bigText(messageText);
+                bigText.setBigContentTitle(title);
 
                 String summaryText = getString(extras, SUMMARY_TEXT);
                 if (summaryText != null) {
@@ -331,18 +355,18 @@ public class GCMIntentService extends GCMBaseIntentService{
         }
     }
 
-    private String getString(Bundle extras,String key) {
+    private String getString(Bundle extras, String key) {
         String message = extras.getString(key);
         if (message == null) {
-            message = extras.getString(GCM_NOTIFICATION+"."+key);
+            message = extras.getString(GCM_NOTIFICATION + "." + key);
         }
         return message;
     }
 
-    private String getString(Bundle extras,String key, String defaultString) {
+    private String getString(Bundle extras, String key, String defaultString) {
         String message = extras.getString(key);
         if (message == null) {
-            message = extras.getString(GCM_NOTIFICATION+"."+key, defaultString);
+            message = extras.getString(GCM_NOTIFICATION + "." + key, defaultString);
         }
         return message;
     }
@@ -440,8 +464,7 @@ public class GCMIntentService extends GCMBaseIntentService{
         if (icon != null) {
             iconId = resources.getIdentifier(icon, DRAWABLE, packageName);
             Log.d(LOG_TAG, "using icon from plugin options");
-        }
-        else if (localIcon != null) {
+        } else if (localIcon != null) {
             iconId = resources.getIdentifier(localIcon, DRAWABLE, packageName);
             Log.d(LOG_TAG, "using icon from plugin options");
         }
@@ -460,8 +483,7 @@ public class GCMIntentService extends GCMBaseIntentService{
             } catch (IllegalArgumentException e) {
                 Log.e(LOG_TAG, "couldn't parse color from android options");
             }
-        }
-        else if (localIconColor != null) {
+        } else if (localIconColor != null) {
             try {
                 iconColor = Color.parseColor(localIconColor);
             } catch (IllegalArgumentException e) {
@@ -488,8 +510,8 @@ public class GCMIntentService extends GCMBaseIntentService{
     }
 
     private static String getAppName(Context context) {
-        CharSequence appName =  context.getPackageManager().getApplicationLabel(context.getApplicationInfo());
-        return (String)appName;
+        CharSequence appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo());
+        return (String) appName;
     }
 
     @Override
@@ -506,11 +528,9 @@ public class GCMIntentService extends GCMBaseIntentService{
 
         try {
             retval = Integer.parseInt(getString(extras, value));
-        }
-        catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             Log.e(LOG_TAG, "Number format exception - Error parsing " + value + ": " + e.getMessage());
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "Number format exception - Error parsing " + value + ": " + e.getMessage());
         }
 
