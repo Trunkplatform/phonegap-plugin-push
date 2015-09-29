@@ -7,7 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
-
+import com.adobe.phonegap.push.GCMIntentService;
 import static com.adobe.phonegap.push.PushConstants.*;
 
 public class PushHandlerActivity extends Activity{
@@ -51,7 +51,15 @@ public class PushHandlerActivity extends Activity{
             originalExtras.putString(CALLBACK, getIntent().getExtras().getString("callback"));
 
             PushPlugin.sendExtras(originalExtras);
+
+            clearNotification();
         }
+    }
+
+    private void clearNotification() {
+        final NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
+        GCMIntentService.messageList.clear();
     }
 
     /**
@@ -66,7 +74,6 @@ public class PushHandlerActivity extends Activity{
     @Override
     protected void onResume() {
         super.onResume();
-        final NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancelAll();
+        clearNotification();
     }
 }

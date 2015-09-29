@@ -46,7 +46,7 @@ import static com.adobe.phonegap.push.PushConstants.*;
 public class GCMIntentService extends GCMBaseIntentService {
 
     private static final String LOG_TAG = "PushPlugin_GCMIntentService";
-    private static LinkedListMultimap<String, NotificationObject> messageList = LinkedListMultimap.create();
+    static LinkedListMultimap<String, NotificationObject> messageList = LinkedListMultimap.create();
     int notificationId = 0;
 
     public void setNotification(String id, NotificationObject message) {
