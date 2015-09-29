@@ -4,7 +4,7 @@
     xmlns:amazon="http://schemas.android.com/apk/lib/com.amazon.device.ads"
     xmlns:rim="http://www.blackberry.com/ns/widgets"
     id="com.trunkplatform.cordova.plugin.phonegap-plugin-push"
-    version="1.2.4">
+    version="1.2.5">
 
   <name>Cordova PushPlugin</name>
 	<author>Trunk Platform</author>
