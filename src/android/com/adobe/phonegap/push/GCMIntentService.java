@@ -106,10 +106,17 @@ public class GCMIntentService extends GCMBaseIntentService {
         }
     }
 
+    private String getEntityId(Bundle extras){
+        String entityId = extras.getString("payload", "");
+        if(entityId.equals(""))
+            entityId = extras.getString("entityId", "");
+        return entityId;
+    }
+
     private void clearNotificationRelatedToStream(Bundle extras) {
-        String streamId = extras.getString("payload", "");
-        if (!streamId.isEmpty()) {
-            messageList.removeAll(streamId);
+        String entityId = getEntityId(extras);
+        if (!entityId.isEmpty()) {
+            messageList.removeAll(entityId);
         }
     }
 
@@ -288,8 +295,8 @@ public class GCMIntentService extends GCMBaseIntentService {
         String style = "inbox";
 
         if (STYLE_INBOX.equals(style)) {
-            String streamId = extras.getString("payload", "");
-            setNotification(streamId, message);
+            String entityId = getEntityId(extras);
+            setNotification(entityId, message);
 
             Integer sizeList = messageList.size();
             if (message != null) {
